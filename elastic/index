@@ -1,0 +1,303 @@
+PUT produtos_hipster
+{
+  "settings": {
+    "analysis": {
+      "filter": {
+        "autocomplete_filter": {
+          "type": "edge_ngram",
+          "min_gram": 2,
+          "max_gram": 15
+        }
+      },
+      "analyzer": {
+        "autocomplete_index": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "asciifolding",
+            "autocomplete_filter"
+          ]
+        },
+        "autocomplete_search": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "asciifolding"
+          ]
+        },
+        "pt_search": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": [
+            "lowercase",
+            "asciifolding"
+          ]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "nome": {
+        "type": "text",
+        "analyzer": "autocomplete_index",
+        "search_analyzer": "autocomplete_search",
+        "fields": {
+          "keyword": {
+            "type": "keyword"
+          }
+        }
+      },
+      "descricao": {
+        "type": "text",
+        "analyzer": "pt_search"
+      },
+      "categoria": {
+        "type": "keyword"
+      },
+      "subcategoria": {
+        "type": "keyword"
+      },
+      "marca": {
+        "type": "keyword"
+      },
+      "preco": {
+        "type": "float"
+      },
+      "emPromocao": {
+        "type": "boolean"
+      },
+      "rating": {
+        "type": "float"
+      },
+      "tags": {
+        "type": "keyword"
+      },
+      "cor": {
+        "type": "keyword"
+      },
+      "disponivel": {
+        "type": "boolean"
+      },
+      "createdAt": {
+        "type": "date"
+      }
+    }
+  }
+}
+
+GET produtos_hipster/_count
+
+GET produtos_hipster/_search
+{
+    "size": 0
+}
+
+
+GET produtos_hipster/_count
+{
+    "query": {
+        "term": {
+          "emPromocao": {
+            "value": true
+          }
+        }
+    }
+}
+GET produtos_hipster/_search
+{   
+    "size": 0,
+    "aggs": {
+      "preco_medio": {
+        "avg": { "field": "preco"}
+      }
+    }
+}
+GET produtos_hipster/_search
+{   
+    "size": 0,
+    "aggs": {
+      "rating": {
+        "avg": { "field": "rating"}
+      }
+    }
+}
+GET produtos_hipster/_search
+{   
+    "size": 0,
+    "aggs": {
+      "por_categoria": {
+        "terms": {
+            "field": "categoria"
+        }
+      }
+    }
+}
+GET produtos_hipster/_search
+{
+    "size": 0,
+    "aggs": {
+      "por_categoria": {
+        "terms": {
+            "field": "categoria"
+        },
+        "aggs": {
+          "sub_categoria": {
+            "terms": {"field": "subcategoria"}
+          }
+        }
+      }
+    }
+}
+
+GET produtos_hipster/_search
+{
+    "size": 0,
+    "aggs": {
+      "top_marcas": {
+        "terms": {
+            "field": "marca",
+            "size": 3
+        }
+      }
+    }
+}
+GET produtos_hipster/_search
+{
+    "size": 0,
+    "aggs": {
+      "por_categoria": {
+        "terms": {
+            "field": "marca"
+        },
+        "aggs": {
+          "preco_medio": {
+            "avg": {
+              "field": "preco"
+            }
+          },
+          "ordernar_preco":{
+            "bucket_sort": {
+              "sort": [
+                {"preco_medio": {"order": "desc"}}
+              ]
+            }
+          }
+        }
+      }
+    }
+}
+
+GET produtos_hipster/_search
+{
+    "size": 0,
+    "aggs": {
+      "rating_faixa": {
+        "range": {
+            "field": "rating",
+            "ranges": [
+                {"to": 2},
+                {"from": 2, "to": 3},
+                {"from": 3, "to": 4},
+                {"from": 4, "to": 4.5},
+                {"from": 4.5}
+
+            ]
+
+        }
+      }
+    }
+}
+
+GET produtos_hipster/_search
+{
+    "size": 0,
+    "aggs": {
+      "cadastros_por_mes": {
+        "date_histogram": {
+            "field": "createdAt",
+            "calendar_interval": ""
+        }
+      }
+    }
+}
+
+
+
+
+GET produtos_hipster/_search
+{
+    "query": {
+        "match":{
+            "nome": "guita"
+        }
+    }
+}
+GET produtos_hipster/_search
+{
+    "query": {
+        "match":{
+            "descricao": "algodao vintage artesanal"
+        }
+    }
+}
+GET produtos_hipster/_search
+{
+    "query": {
+        "multi_match":{
+           "query" : "jaqeta vintage preta, estética",
+           "fields": [
+            "nome^3",
+            "descricao"
+           ],
+           "minimum_should_match": "75%",
+           "fuzziness": "AUTO"
+           
+        }
+    },
+    "highlight": {
+        "pre_tags": "<strong>",
+        "post_tags": "</strong>"
+        ,"fields": {
+        "nome": {},
+        "descricao": {}}}
+}
+GET produtos_hipster/_search
+{
+    "query": {
+        "function_score": {
+          "query": {
+            "multi_match":{
+            "query" : "jaqeta vintage preta, estética",
+           "fields": [
+            "nome^3",
+            "descricao"
+           ]
+        }
+          },
+          "functions": [
+            {
+                "filter": {
+                    "term": {
+                      "emPromocao": true
+                    }
+                }, "weight": 1.5
+            },
+                 {
+                "filter": {
+                    "term": {
+                      "disponivel": true
+                    }
+                }, "weight": 2.5
+            }
+            
+          ],
+          "boost_mode": "multiply"
+        }
+    }
+}
