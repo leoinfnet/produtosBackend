@@ -1,3 +1,5 @@
 spring:
+  elasticsearch:
+    uris: http://localhost:9200
   application:
     name: produtosBackend
